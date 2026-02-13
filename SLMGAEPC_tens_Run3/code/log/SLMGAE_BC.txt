@@ -40,3 +40,9 @@ Average metrics over pairs:
  aupr_mean:0.89195, aupr_sdv:0.05871
  f1_mean: 0.95023, f1_sdv: 0.02810
 
+Average metrics over pairs:
+ time_mean:15.30958, time_sdv:0.90846
+ auc_mean:0.92812, auc_sdv:0.01840
+ aupr_mean:0.95104, aupr_sdv:0.01063
+ f1_mean: 0.88832, f1_sdv: 0.01393
+

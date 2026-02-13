@@ -68,6 +68,7 @@ neg_edge_kf = kf.split(neg_edge)
 # Score entre precision y recall
 auc_pair, aupr_pair, f1_pair, train_time = [], [], [], []
 training_loss, testing_loss = [], []
+
 name = 1
 for train_pos, test_pos in pos_edge_kf:
     _, test_neg = next(neg_edge_kf)

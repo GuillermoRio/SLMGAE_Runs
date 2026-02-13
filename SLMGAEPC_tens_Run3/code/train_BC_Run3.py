@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import time
 import os
+import pandas as pd
 
 from sklearn.model_selection import KFold
 
@@ -19,7 +20,7 @@ np.random.seed(seed)
 tf.set_random_seed(seed)
 
 # N de las shapes
-shapeViews = 85
+shapeViews = 693
 # Nombre carpetas donde coger los  datos
 carpetaInput = '../data_Run3/'
 
@@ -43,13 +44,13 @@ flags.DEFINE_float('Coe', 1.0, 'Coefficient of support view loss.')
 flags.DEFINE_float('Beta', 2.0, 'Coefficient of final loss.')
 flags.DEFINE_integer('early_stopping', 20, 'Tolerance for early stopping (# of epochs).')
 
-pos_edge, neg_edge, adjs_orig = load_BC_data()#Matriz principal y las supports
+pos_edge, neg_edge, adjs_orig = load_BC_data(carpetaInput)#Matriz principal y las supports
 
 np.random.shuffle(pos_edge)
 np.random.shuffle(neg_edge)
 
 # Store original adjacency matrix (without diagonal entries) for later
-adj_orig = sp.csr_matrix((np.ones(len(pos_edge)), (pos_edge[:, 0], pos_edge[:, 1])), shape=(332, 332))
+adj_orig = sp.csr_matrix((np.ones(len(pos_edge)), (pos_edge[:, 0], pos_edge[:, 1])), shape=(shapeViews, shapeViews))
 # Eliminar conexiones con uno mismo
 adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
 adj_orig.eliminate_zeros()
@@ -65,6 +66,8 @@ neg_edge_kf = kf.split(neg_edge)
 # Score entre precision y recall
 auc_pair, aupr_pair, f1_pair, train_time = [], [], [], []
 training_loss, testing_loss = [], []
+
+name = 1
 for train_pos, test_pos in pos_edge_kf:
     _, test_neg = next(neg_edge_kf)
 
@@ -76,7 +79,7 @@ for train_pos, test_pos in pos_edge_kf:
     row = pos_edge[train_pos, 0]
     col = pos_edge[train_pos, 1]
     val = np.ones(len(train_pos))
-    adj = sp.csr_matrix((val, (row, col)), shape=(332, 332))
+    adj = sp.csr_matrix((val, (row, col)), shape=(shapeViews, shapeViews))
     adj = adj + adj.T #Matriz principal
 
     adjs = adjs_orig[0: 5] # Supports
@@ -203,7 +206,29 @@ for train_pos, test_pos in pos_edge_kf:
     auc_pair.append(eva_score[-1][1])
     aupr_pair.append(eva_score[-1][2])
     f1_pair.append(eva_score[-1][3])
-    print(adj_rec)
+    
+    #Print y CSV
+    num = adj_rec.shape[0]
+    x, y = np.triu_indices(num, k=1)
+
+    c_set = set(zip(x, y)) - set(zip(row, col))
+    slMapping = {}
+    with open('../data_Run3/gene_list.txt', 'r') as inf:
+        id = 0
+        for line in inf:
+            slMapping[id] = line.replace('\n', '')
+            id += 1
+
+    inx = np.array(list(c_set))
+    prediction = []
+    for x, y, z in zip(inx[:, 0], inx[:, 1], adj_rec[inx[:, 0], inx[:, 1]]):
+        prediction.append([slMapping[x], slMapping[y], z])
+
+    prediction.sort(key=lambda x: x[2], reverse=True)
+
+    df = pd.DataFrame(data=prediction[:5000])
+    df.to_csv(f'../ResultsRun3/Top_nonPred{name}.csv')
+    name = name + 1
 
 m1, sdv1 = mean_confidence_interval(auc_pair)
 m2, sdv2 = mean_confidence_interval(aupr_pair)
