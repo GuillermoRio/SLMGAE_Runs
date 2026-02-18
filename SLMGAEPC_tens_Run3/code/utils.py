@@ -25,7 +25,7 @@ def load_data(knn=False, nnSize=0):
     return pos_edge, neg_edge, adjs
 
 
-def load_BC_data(carpeta):
+def load_PC_data(carpeta):
     print("loading sl data...")
     adjs = []
     adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_coexpr_for_train.txt')))

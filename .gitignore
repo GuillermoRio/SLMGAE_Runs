@@ -1,30 +1,16 @@
 # Default ignored files
-*.xml
-.idea
+/shelf/
+/workspace.xml
+
 #Ignoramos el proyecto principal y el env
 SLMGAE_env/
 SLMGAE-master
 
 #Ignorar capeta entera menos codigo
 SLMGAEPC_tens_Run1/code/__pycache__/
-SLMGAEPC_tens_Run1/code/log/
-SLMGAEPC_tens_Run1/code/results/
-SLMGAEPC_tens_Run1/data/
-SLMGAEPC_tens_Run1/PC_data/
-
-!SLMGAEPC_tens_Run1/code
-!SLMGAEPC_tens_Run1/code/
 
 #Ignorar capeta entera menos codigo
 SLMGAEPC_tens_Run2/code/__pycache__/
-SLMGAEPC_tens_Run2/code/log/
-SLMGAEPC_tens_Run2/code/results/
-SLMGAEPC_tens_Run2/data/
-SLMGAEPC_tens_Run2/PC_data/
-
-!SLMGAEPC_tens_Run2/code
-!SLMGAEPC_tens_Run2/code/
 
 #Ignorar capeta entera menos codigo
 SLMGAEPC_tens_Run3/code/__pycache__/
-SLMGAEPC_tens_Run3/BC_data

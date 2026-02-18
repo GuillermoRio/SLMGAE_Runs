@@ -14,17 +14,17 @@ def log(message):
     codecs.open(log_file, mode='a', encoding='utf-8').write(message + "\n")
     print(message)
 
-def load_PC_data():
+def load_PC_data(carpeta):
     print("loading sl data...")
     adjs = []
-    adjs.append(sp.coo_matrix(np.loadtxt('../PC_data/F1_F2_coexpr_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt('../PC_data/F1_F2_me_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt('../PC_data/F1_F2_pathway_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt('../PC_data/F1_F2_proteincomplex_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt('../PC_data/F1_F2_ppi_for_train.txt')))
-    pos_edge = np.load('../PC_data/pos_edge_binary.npy').astype(np.int32)
-    neg_edge = np.load('../PC_data/neg_edge_binary.npy').astype(np.int32)
-    
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_coexpr_for_train.txt')))
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_me_for_train.txt')))
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_pathway_for_train.txt')))
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_ppi_for_train.txt')))
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_proteincomplex_for_train.txt')))
+
+    pos_edge = np.load(f'{carpeta}pos_edge_binary.npy').astype(np.int32)
+    neg_edge = np.load(f'{carpeta}neg_edge_binary.npy').astype(np.int32)
     return pos_edge, neg_edge, adjs
 
 def sparse_to_tuple(sparse_mx): #Convierte una matriz sparse a coordenadas, valores y shape
@@ -41,6 +41,15 @@ col = [1, 0, 2]        [[0 1]
 data = [5, 3, 1]        [1 0]
                         [1 2]]
 '''
+
+def mean_confidence_interval(data, confidence=0.95):
+    import scipy as sp
+    import scipy.stats
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * sp.stats.t._ppf((1 + confidence) / 2., n - 1)
+    return m, h
 
 
 def preprocess_graph(adj):

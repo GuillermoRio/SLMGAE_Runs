@@ -123,7 +123,7 @@ class SLMGAE():
         return self.reconstructions
 
 
-class SLMGAE_BC():
+class SLMGAE_PC():
     def __init__(self, placeholders, num_features, features_nonzero, num_nodes, num_supView, name):
         self.name = name
         self.num_nodes = num_nodes
