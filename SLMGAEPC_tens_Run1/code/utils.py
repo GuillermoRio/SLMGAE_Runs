@@ -17,11 +17,11 @@ def log(message):
 def load_PC_data(carpeta):
     print("loading sl data...")
     adjs = []
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_ppi_for_train.txt')))    
     adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_coexpr_for_train.txt')))
     adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_me_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_pathway_for_train.txt')))
-    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_ppi_for_train.txt')))
     adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_proteincomplex_for_train.txt')))
+    adjs.append(sp.coo_matrix(np.loadtxt(f'{carpeta}F1_F2_pathway_for_train.txt')))
 
     pos_edge = np.load(f'{carpeta}pos_edge_binary.npy').astype(np.int32)
     neg_edge = np.load(f'{carpeta}neg_edge_binary.npy').astype(np.int32)

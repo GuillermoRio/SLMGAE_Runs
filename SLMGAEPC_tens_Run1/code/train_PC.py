@@ -23,6 +23,7 @@ tf.set_random_seed(seed)
 shapeViews = 85
 # Nombre carpetas donde coger los  datos
 carpetaInput = '../PC_data/'
+carpetaOutput = '../resultados/4/'
 
 # tensorflow config
 config = tf.ConfigProto()
@@ -31,13 +32,13 @@ config.gpu_options.allow_growth = True
 # Settings
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('log_file', "log/SLMGAE_PC.txt", 'log file name.')
+flags.DEFINE_string('log_file', f"{carpetaOutput}/log/SLMGAE_PC.txt", 'log file name.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('eva_epochs', 100, 'Number of epochs to evaluate')
 flags.DEFINE_integer('hidden1', 128, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 64, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('nn_size', 45, 'Number of K for the KNN')
+flags.DEFINE_integer('nn_size', 20, 'Number of K for the KNN')
 flags.DEFINE_float('dropout', 0.3, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('Alpha', 0.5, 'Coefficient of support view loss.')
 flags.DEFINE_float('Coe', 1.0, 'Coefficient of support view loss.')
@@ -49,7 +50,6 @@ pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput)#Matriz principal y la
 
 np.random.shuffle(pos_edge)
 np.random.shuffle(neg_edge)
-
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = sp.csr_matrix((np.ones(len(pos_edge)), (pos_edge[:, 0], pos_edge[:, 1])), shape=(shapeViews, shapeViews))
@@ -229,7 +229,7 @@ for train_pos, test_pos in pos_edge_kf:
     prediction.sort(key=lambda x: x[2], reverse=True)
 
     df = pd.DataFrame(data=prediction[:5000])
-    df.to_csv(f'../resultados/Top_nonPred{name}.csv')
+    df.to_csv(f'{carpetaOutput}Top_nonPred{name}.csv')
     name = name + 1
 
     m1, sdv1 = mean_confidence_interval(auc_pair)

@@ -1,0 +1,1 @@
+Voy a cambiar el nn_size de 45 a 15 o 20

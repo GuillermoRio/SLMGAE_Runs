@@ -3,6 +3,7 @@ import codecs
 import pandas as pd
 import numpy as np
 import scipy.sparse as sp
+from pathlib import Path
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -26,18 +27,19 @@ def load_data(knn=False, nnSize=0):
     return pos_edge, neg_edge, adjs
 
 
-def load_PC_data(carpeta):
+def load_PC_data(carpeta, num_views):
     print("loading sl data...")
+    
     adjs = []
-
-    adjs.append(sp.coo_matrix(pd.read_parquet(f'{carpeta}F1_F2_coexpr_for_train.parquet').values))
-    adjs.append(sp.coo_matrix(pd.read_parquet(f'{carpeta}F1_F2_me_for_train.parquet').values))
-    adjs.append(sp.coo_matrix(pd.read_parquet(f'{carpeta}F1_F2_pathway_for_train.parquet').values))
-    adjs.append(sp.coo_matrix(pd.read_parquet(f'{carpeta}F1_F2_ppi_for_train.parquet').values))
-    adjs.append(sp.coo_matrix(pd.read_parquet(f'{carpeta}F1_F2_proteincomplex_for_train.parquet').values))
-    data = np.load(f'{carpeta}pos_edge_binary.npz')
+    
+    archivos = sorted(Path(carpeta).glob("*.parquet"))
+    
+    for archivo in archivos[:num_views]:
+        df = pd.read_parquet(archivo)
+        adjs.append(sp.coo_matrix(df.values))
+        
+    data = np.load(f'{carpeta}datos.npz')
     pos_edge = data['pos_edge']
-    data = np.load(f'{carpeta}neg_edge_binary.npz')
     neg_edge = data['neg_edge']
     return pos_edge, neg_edge, adjs
 

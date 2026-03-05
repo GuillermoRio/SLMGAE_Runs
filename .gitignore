@@ -5,6 +5,7 @@
 #Ignoramos el proyecto principal y el env
 SLMGAE_env/
 SLMGAE-master
+neg_edge_binary.npy
 
 #Ignorar capeta entera menos codigo
 SLMGAEPC_tens_Run1/code/__pycache__/
@@ -14,3 +15,10 @@ SLMGAEPC_tens_Run2/code/__pycache__/
 
 #Ignorar capeta entera menos codigo
 SLMGAEPC_tens_Run3/code/__pycache__/
+
+#Ignorar capeta entera menos codigo
+SLMGAEPC_tens_Run4/code/__pycache__/
+SLMGAEPC_tens_Run4/data_aux/
+SLMGAEPC_tens_Run4/results_aux/
+
+

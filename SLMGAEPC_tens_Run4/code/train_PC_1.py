@@ -26,9 +26,12 @@ os.environ['PYTHONHASHSEED'] = str(seed)
 
 # N de las shapes
 shapeViews = 85
+supportViews = 5
+
 # Nombre carpetas donde coger los  datos 
 # Mia screening
-carpetaInput = '../PC_data_1/'
+carpetaInput = '../data_aux/'
+carpetaOutpt = '../results_aux/'
 
 # tensorflow config
 config = tf.ConfigProto(
@@ -46,7 +49,7 @@ flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('eva_epochs', 100, 'Number of epochs to evaluate')
 flags.DEFINE_integer('hidden1', 128, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 64, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('nn_size', 45, 'Number of K for the KNN')
+flags.DEFINE_integer('nn_size', 20, 'Number of K for the KNN')
 flags.DEFINE_float('dropout', 0.3, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('Alpha', 0.5, 'Coefficient of support view loss.')
 flags.DEFINE_float('Coe', 1.0, 'Coefficient of support view loss.')
@@ -54,12 +57,12 @@ flags.DEFINE_float('Beta', 2.0, 'Coefficient of final loss.')
 flags.DEFINE_integer('early_stopping', 20, 'Tolerance for early stopping (# of epochs).')
 
 
-pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput)#Matriz principal y las supports
+pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput, supportViews)#Matriz principal y las supports
 
 np.random.shuffle(pos_edge)
 np.random.shuffle(neg_edge)
 
-
+print(adjs_orig[0: 5])
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = sp.csr_matrix((np.ones(len(pos_edge)), (pos_edge[:, 0], pos_edge[:, 1])), shape=(shapeViews, shapeViews))
 # Eliminar conexiones con uno mismo
@@ -93,7 +96,7 @@ for train_pos, test_pos in pos_edge_kf:
     adj = sp.csr_matrix((val, (row, col)), shape=(shapeViews, shapeViews))
     adj = adj + adj.T #Matriz principal
 
-    adjs = adjs_orig[0: 5] # Supports
+    adjs = adjs_orig[0: supportViews] # Supports del 0 al 5
     adjs.append(adj)
 
     num_nodes = adj.shape[0]
@@ -155,7 +158,7 @@ for train_pos, test_pos in pos_edge_kf:
         }
 
     # Create model
-    model = SLMGAE_PC(placeholders, num_features, features_nonzero, num_nodes, num_supports - 1,
+    model = SLMGAE_PC(placeholders, num_features, features_nonzero, num_nodes, num_supports,
                    name=f'SLMGAE_{k_round}')
 
     # Create optimizer
@@ -238,7 +241,7 @@ for train_pos, test_pos in pos_edge_kf:
     prediction.sort(key=lambda x: x[2], reverse=True)
 
     df = pd.DataFrame(data=prediction[:5000])
-    df.to_csv(f'../resultados_1/Top_nonPred{name}.csv')
+    df.to_csv(f'{carpetaOutpt}Top_nonPred{name}.csv')
     name = name + 1
 
     m1, sdv1 = mean_confidence_interval(auc_pair)

@@ -1,0 +1,30 @@
+Average metrics over pairs:
+ time_mean:9.47021, time_sdv:nan
+ auc_mean:0.92760, auc_sdv:nan
+ aupr_mean:0.94922, aupr_sdv:nan
+ f1_mean: 0.88155, f1_sdv: nan
+
+Average metrics over pairs:
+ time_mean:9.46338, time_sdv:0.08680
+ auc_mean:0.93220, auc_sdv:0.05837
+ aupr_mean:0.95345, aupr_sdv:0.05374
+ f1_mean: 0.88693, f1_sdv: 0.06832
+
+Average metrics over pairs:
+ time_mean:9.46380, time_sdv:0.01707
+ auc_mean:0.92616, auc_sdv:0.02837
+ aupr_mean:0.95038, aupr_sdv:0.01690
+ f1_mean: 0.88801, f1_sdv: 0.01414
+
+Average metrics over pairs:
+ time_mean:9.47911, time_sdv:0.04953
+ auc_mean:0.92650, auc_sdv:0.01487
+ aupr_mean:0.95033, aupr_sdv:0.00884
+ f1_mean: 0.88701, f1_sdv: 0.00806
+
+Average metrics over pairs:
+ time_mean:9.48117, time_sdv:0.03396
+ auc_mean:0.92840, auc_sdv:0.01135
+ aupr_mean:0.95100, aupr_sdv:0.00626
+ f1_mean: 0.88428, f1_sdv: 0.00934
+
