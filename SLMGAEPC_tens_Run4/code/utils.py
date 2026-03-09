@@ -38,9 +38,9 @@ def load_PC_data(carpeta, num_views):
         df = pd.read_parquet(archivo)
         adjs.append(sp.coo_matrix(df.values))
         
-    data = np.load(f'{carpeta}datos.npz')
-    pos_edge = data['pos_edge']
-    neg_edge = data['neg_edge']
+    pos_edge = np.load(f'{carpeta}pos_edge_binary.npy').astype(np.int32)[:, :2]
+    neg_edge = np.load(f'{carpeta}neg_edge_binary.npy').astype(np.int32)[:, :2]
+
     return pos_edge, neg_edge, adjs
 
 
@@ -219,6 +219,10 @@ def construct_feed_dict(support, features, adj_orig, placeholders):
     feed_dict.update({placeholders['adj_orig']: adj_orig})
     return feed_dict
 
+def sample_negative(num_nodes, num_samples):
+    a = np.random.randint(0, num_nodes, num_samples)
+    b = np.random.randint(0, num_nodes, num_samples)
+    return np.stack((a, b), axis=1)
 
 if __name__ == '__main__':
     a = load_dense_feature('../data/Human_GOsim.txt', knn=True, nnSize=45)
