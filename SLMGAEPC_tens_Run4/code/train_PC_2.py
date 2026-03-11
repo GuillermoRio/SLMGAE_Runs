@@ -1,5 +1,3 @@
-  GNU nano 2.3.1                                                                             File: train_PC_2.py                                                                                                                                                                
-
 from __future__ import division
 from __future__ import print_function
 
