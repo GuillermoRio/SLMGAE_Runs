@@ -1,30 +1,75 @@
+PORCENTAJES DE MEJORA - FOLD 1
+
+	Main upgraded: 15.1%
+	Preds upgraded: 69.3%
+	PPI: 57.9%
+	Co-expression: 62.9%
+	ME: 82.7%
+	ProteinComplex: 83.0%
+	Pathway: 10.0%
 Average metrics over pairs:
- time_mean:1.20517, time_sdv:nan
- auc_mean:0.99181, auc_sdv:nan
- aupr_mean:0.98598, aupr_sdv:nan
+ time_mean:1.22720, time_sdv:nan
+ auc_mean:0.98797, auc_sdv:nan
+ aupr_mean:0.96179, aupr_sdv:nan
  f1_mean: 0.98824, f1_sdv: nan
 
+PORCENTAJES DE MEJORA - FOLD 2
+
+	Main upgraded: 30.0%
+	Preds upgraded: 68.2%
+	PPI: 50.6%
+	Co-expression: 70.7%
+	ME: 89.9%
+	ProteinComplex: 78.6%
+	Pathway: 30.8%
 Average metrics over pairs:
- time_mean:1.20085, time_sdv:0.05489
- auc_mean:0.96775, auc_sdv:0.30573
- aupr_mean:0.92255, aupr_sdv:0.80595
+ time_mean:1.21898, time_sdv:0.10443
+ auc_mean:0.96186, auc_sdv:0.33174
+ aupr_mean:0.90370, aupr_sdv:0.73805
  f1_mean: 0.96940, f1_sdv: 0.23929
 
+PORCENTAJES DE MEJORA - FOLD 3
+
+	Main upgraded: -38.2%
+	Preds upgraded: 81.0%
+	PPI: 61.7%
+	Co-expression: 54.7%
+	ME: 83.1%
+	ProteinComplex: 75.8%
+	Pathway: 5.3%
 Average metrics over pairs:
- time_mean:1.20004, time_sdv:0.01128
- auc_mean:0.95496, auc_sdv:0.08124
- aupr_mean:0.90279, aupr_sdv:0.17904
+ time_mean:1.21432, time_sdv:0.02863
+ auc_mean:0.95265, auc_sdv:0.07600
+ aupr_mean:0.89322, aupr_sdv:0.15117
  f1_mean: 0.95738, f1_sdv: 0.06975
 
+PORCENTAJES DE MEJORA - FOLD 4
+
+	Main upgraded: 50.5%
+	Preds upgraded: 77.3%
+	PPI: 41.9%
+	Co-expression: 52.6%
+	ME: 82.0%
+	ProteinComplex: 80.2%
+	Pathway: 14.4%
 Average metrics over pairs:
- time_mean:1.19858, time_sdv:0.00752
- auc_mean:0.94718, auc_sdv:0.04918
- aupr_mean:0.88775, aupr_sdv:0.10516
+ time_mean:1.21228, time_sdv:0.01632
+ auc_mean:0.94543, auc_sdv:0.04591
+ aupr_mean:0.88001, aupr_sdv:0.08955
  f1_mean: 0.95124, f1_sdv: 0.04138
 
+PORCENTAJES DE MEJORA - FOLD 5
+
+	Main upgraded: -26.0%
+	Preds upgraded: 64.1%
+	PPI: 64.7%
+	Co-expression: 72.5%
+	ME: 77.9%
+	ProteinComplex: 81.1%
+	Pathway: 15.4%
 Average metrics over pairs:
- time_mean:1.19865, time_sdv:0.00508
- auc_mean:0.94641, auc_sdv:0.03330
- aupr_mean:0.88272, aupr_sdv:0.07243
+ time_mean:1.21688, time_sdv:0.01688
+ auc_mean:0.94498, auc_sdv:0.03105
+ aupr_mean:0.88157, aupr_sdv:0.06067
  f1_mean: 0.95023, f1_sdv: 0.02810
 

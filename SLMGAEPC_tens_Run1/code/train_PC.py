@@ -4,6 +4,7 @@ from __future__ import print_function
 import time
 import os
 import pandas as pd
+import csv
 
 from sklearn.model_selection import KFold
 
@@ -23,7 +24,15 @@ tf.set_random_seed(seed)
 shapeViews = 85
 # Nombre carpetas donde coger los  datos
 carpetaInput = '../PC_data/'
-carpetaOutput = '../resultados/4/'
+carpetaOutput = '../resultados/1/'
+
+nombres_vistas = [
+    "PPI",           # Vista 0 - Interacciones proteína-proteína
+    "Co-expression", # Vista 1 - Co-expresión
+    "ME",            # Vista 2 - (Mutual Exclusivity?)
+    "ProteinComplex",# Vista 3 - Complejos proteicos
+    "Pathway"        # Vista 4 - Rutas metabólicas
+]
 
 # tensorflow config
 config = tf.ConfigProto()
@@ -69,7 +78,20 @@ neg_edge_kf = kf.split(neg_edge)
 auc_pair, aupr_pair, f1_pair, train_time = [], [], [], []
 training_loss, testing_loss = [], []
 
+
+# Ver lo losses de cada matriz en sus epochs
+
+csv_filename = f'{carpetaOutput}entrenamientos/perdidas_folds.csv'
+with open(csv_filename, 'w', newline='') as f:
+    writer = csv.writer(f)
+    cabecera = ['epoch', 'costo_total', 'main_loss', 'preds_loss']
+    # Añade una columna por cada vista
+    for i, nombre in enumerate(nombres_vistas):
+        cabecera.append(f'vista_{i}_{nombre}')
+    writer.writerow(cabecera)
+
 name = 1
+
 for train_pos, test_pos in pos_edge_kf:
     _, test_neg = next(neg_edge_kf)
 
@@ -174,21 +196,88 @@ for train_pos, test_pos in pos_edge_kf:
     eva_score, cost_val, epoch = [], [], 0
 
     tt = time.time()
+
     for epoch in range(FLAGS.epochs):
         t = time.time()
 
         feed_dict = construct_feed_dict(supports, features, adj_label, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
 
-        # One update of parameter matrices
-        _, avg_cost = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
+        tensores_a_ejecutar = [
+        opt.opt_op,           # Operación de optimización
+        opt.cost,             # Costo total
+        opt.loss_main,        # Pérdida vista principal
+        opt.loss_preds,       # Pérdida predicción final
+        *opt.loss_supp_individual  # TODAS las pérdidas individuales (el * desempaqueta la lista)
+        ]
+    
+        # Ejecutamos y recibimos todos los valores
+        resultados = sess.run(tensores_a_ejecutar, feed_dict=feed_dict)
+        
+        # Desempaquetamos los resultados
+        # resultados[0] = opt_op (no nos interesa el valor)
+        # resultados[1] = cost
+        # resultados[2] = loss_main
+        # resultados[3] = loss_preds
+        # resultados[4] en adelante = loss de cada vista de soporte
+        
+        avg_cost = resultados[1]
+        loss_main_val = resultados[2]
+        loss_preds_val = resultados[3]
+        losses_supp_val = resultados[4:]  # Todas las pérdidas de soporte
 
         cost_val.append(avg_cost)
+        
+        # DENTRO del bucle de entrenamiento, después de calcular las pérdidas:
+        if (epoch + 1) % 10 == 0:
+            print(f"\nEpoch: {epoch + 1:04d}")
+            print(f"  Costo total: {avg_cost:.5f}")
+            print(f"  Main loss: {loss_main_val:.5f}")
+            print(f"  Preds loss: {loss_preds_val:.5f}")
+            print("  Vistas de soporte:")
+            for i, loss_val in enumerate(losses_supp_val):
+                print(f"    Vista {i}: {loss_val:.5f}")
+            print(f"  Tiempo: {time.time() - t:.5f}")
+            
+            # GUARDAR EN CSV
+            with open(csv_filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                fila = [epoch + 1, avg_cost, loss_main_val, loss_preds_val] + losses_supp_val
+                writer.writerow(fila)
+    
+    
+    # Ahora sacaremos el % de las losses
+    log(f"PORCENTAJES DE MEJORA - FOLD {k_round}\n")
+    df_completo = pd.read_csv(csv_filename)
 
-        print("Epoch: " + '%04d' % (epoch + 1) +
-              " train_loss=" + "{:.5f}".format(avg_cost) +
-              " time= " + "{:.5f}".format(time.time() - t))
+    filas_por_fold = FLAGS.epochs/10
+    inicio = int((k_round - 1) * filas_por_fold)
+    fin = int(inicio + filas_por_fold)
 
+    print(filas_por_fold, inicio, fin)
+    df_fold = df_completo.iloc[inicio:fin]
+    print(f"  Filas en este fold: {len(df_fold)} (de {inicio} a {fin-1})\n")
+    # Main upgraded
+    main_inicial = df_fold['main_loss'].iloc[0]
+    main_final = df_fold['main_loss'].iloc[-1]
+    main_mejora = (main_inicial - main_final) / main_inicial * 100
+    log(f"\tMain upgraded: {main_mejora:.1f}%")
+
+    # Preds upgraded
+    preds_inicial = df_fold['preds_loss'].iloc[0]
+    preds_final = df_fold['preds_loss'].iloc[-1]
+    preds_mejora = (preds_inicial - preds_final) / preds_inicial * 100
+    log(f"\tPreds upgraded: {preds_mejora:.1f}%")
+
+    # Cada vista
+    for i, nombre in enumerate(nombres_vistas):
+        columna = f'vista_{i}_{nombre}'
+        vista_inicial = df_fold[columna].iloc[0]
+        vista_final = df_fold[columna].iloc[-1]
+        vista_mejora = (vista_inicial - vista_final) / vista_inicial * 100
+        log(f"\t{nombre}: {vista_mejora:.1f}%")
+
+    # Metricas de evaluacion
     train_time.append(time.time() - tt)
     print('Optimization Finished!')
     feed_dict.update({placeholders['dropout']: 0})
@@ -243,4 +332,5 @@ for train_pos, test_pos in pos_edge_kf:
         " aupr_mean:%.5f, aupr_sdv:%.5f\n" % (m2, sdv2) +
         " f1_mean: %.5f, f1_sdv: %.5f\n" % (m3, sdv3))
 
-#print(adj_rec[test_set[:, 0], tesSt_set[:, 1]])
+
+

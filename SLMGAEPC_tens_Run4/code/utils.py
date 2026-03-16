@@ -31,10 +31,12 @@ def load_PC_data(carpeta, num_views):
     print("loading sl data...")
     
     adjs = []
-    
+    nombres_vistas = []
+
     archivos = sorted(Path(carpeta).glob("*.parquet"))
     
-    for archivo in archivos[:num_views]:
+    for i, archivo in enumerate(archivos[:num_views]):
+        print(f'Vista{i}: {archivo.name}')
         df = pd.read_parquet(archivo)
         adjs.append(sp.coo_matrix(df.values))
         

@@ -1,30 +1,75 @@
-Average metrics over pairs:
- time_mean:2.84483, time_sdv:nan
- auc_mean:0.94179, auc_sdv:nan
- aupr_mean:0.93874, aupr_sdv:nan
- f1_mean: 0.89183, f1_sdv: nan
+PORCENTAJES DE MEJORA - FOLD 1
 
+	Main upgraded: 35.2%
+	Preds upgraded: 44.7%
+	PPI: 20.5%
+	Co-expression: 27.8%
+	ME: 64.0%
+	ProteinComplex: 49.1%
+	Pathway: 8.0%
 Average metrics over pairs:
- time_mean:2.83195, time_sdv:0.16370
- auc_mean:0.94478, auc_sdv:0.03799
- aupr_mean:0.93666, aupr_sdv:0.02654
- f1_mean: 0.89872, f1_sdv: 0.08750
+ time_mean:2.88579, time_sdv:nan
+ auc_mean:0.94625, auc_sdv:nan
+ aupr_mean:0.93973, aupr_sdv:nan
+ f1_mean: 0.89247, f1_sdv: nan
 
-Average metrics over pairs:
- time_mean:2.82282, time_sdv:0.05066
- auc_mean:0.94382, auc_sdv:0.00851
- aupr_mean:0.93675, aupr_sdv:0.00520
- f1_mean: 0.89480, f1_sdv: 0.02402
+PORCENTAJES DE MEJORA - FOLD 2
 
+	Main upgraded: 24.3%
+	Preds upgraded: 44.3%
+	PPI: 22.6%
+	Co-expression: 25.8%
+	ME: 63.0%
+	ProteinComplex: 47.0%
+	Pathway: 4.6%
 Average metrics over pairs:
- time_mean:2.82498, time_sdv:0.02737
- auc_mean:0.94034, auc_sdv:0.01192
- aupr_mean:0.93169, aupr_sdv:0.01633
- f1_mean: 0.89276, f1_sdv: 0.01415
+ time_mean:2.86941, time_sdv:0.20814
+ auc_mean:0.94606, auc_sdv:0.00250
+ aupr_mean:0.93639, aupr_sdv:0.04246
+ f1_mean: 0.89666, f1_sdv: 0.05335
 
+PORCENTAJES DE MEJORA - FOLD 3
+
+	Main upgraded: 37.1%
+	Preds upgraded: 47.1%
+	PPI: 23.2%
+	Co-expression: 26.8%
+	ME: 68.9%
+	ProteinComplex: 46.0%
+	Pathway: 7.2%
 Average metrics over pairs:
- time_mean:2.82585, time_sdv:0.01866
- auc_mean:0.93954, auc_sdv:0.00836
- aupr_mean:0.93053, aupr_sdv:0.01149
- f1_mean: 0.89112, f1_sdv: 0.01059
+ time_mean:2.86845, time_sdv:0.04090
+ auc_mean:0.94292, auc_sdv:0.01351
+ aupr_mean:0.93569, aupr_sdv:0.00884
+ f1_mean: 0.89207, f1_sdv: 0.02235
+
+PORCENTAJES DE MEJORA - FOLD 4
+
+	Main upgraded: 30.1%
+	Preds upgraded: 45.1%
+	PPI: 20.6%
+	Co-expression: 22.6%
+	ME: 62.5%
+	ProteinComplex: 44.8%
+	Pathway: 3.9%
+Average metrics over pairs:
+ time_mean:2.86178, time_sdv:0.03012
+ auc_mean:0.93911, auc_sdv:0.01403
+ aupr_mean:0.93099, aupr_sdv:0.01566
+ f1_mean: 0.89099, f1_sdv: 0.01219
+
+PORCENTAJES DE MEJORA - FOLD 5
+
+	Main upgraded: 38.5%
+	Preds upgraded: 45.3%
+	PPI: 21.3%
+	Co-expression: 21.6%
+	ME: 63.7%
+	ProteinComplex: 46.6%
+	Pathway: 6.5%
+Average metrics over pairs:
+ time_mean:2.86002, time_sdv:0.02094
+ auc_mean:0.93788, auc_sdv:0.01008
+ aupr_mean:0.92949, aupr_sdv:0.01137
+ f1_mean: 0.88903, f1_sdv: 0.00987
 
