@@ -153,8 +153,9 @@ for train_pos, test_pos in pos_edge_kf:
     train_index = np.array(list(train_index))
     train_neg_index = np.array(list(train_neg_index))
 
-    # Pasamos vista principal a tuplas
-    features = sparse_to_tuple(adj)
+    # Pasamos vista principal a tuplas (coords, values, shape)
+    features = sparse_to_tuple(adj) 
+    # Numero total de shape[1]
     num_features = features[2][1]
     # Ver cuantas variables hay que no son 0
     features_nonzero = features[1].shape[0]
@@ -162,48 +163,57 @@ for train_pos, test_pos in pos_edge_kf:
     supports = []
     
     for a in adjs:
+        # Calcula grado y factor de correccion para que los 
+        # que tengan menos aristas tambien sean escuchados por el modelo
         supports.append(preprocess_graph(a))
     num_supports = len(supports)
 
+    # Huecos que se rellenaran a futuro
     placeholders = {
+            # Sitio para cada vista support
             'support': [tf.sparse_placeholder(tf.float32, name='adj_{}'.format(_)) for _ in range(num_supports)],
+            # Caracteristicas de entrada
             'features': tf.sparse_placeholder(tf.float32, name='features'),
+            # Matriz origen
             'adj_orig': tf.sparse_placeholder(tf.float32, name='adj_orig'),
+            # Probabilidad de mantener neuronas
             'dropout': tf.placeholder_with_default(0., shape=(), name='dropout'),
         }
 
-    # Create model
+    # Create model 
+    # Encoder -> Decoder -> Capa de Atencion
     model = SLMGAE_PC(placeholders, num_features, features_nonzero, num_nodes, num_supports,
                    name=f'SLMGAE_{k_round}')
 
     # Create optimizer
     with tf.name_scope('optimizer'):
         opt = Optimizer(
-            supp=model.support_recs,
-            main=model.main_rec,
-            preds=model.reconstructions,
+            supp=model.support_recs, # Lista de reconstrucciones de vistas sup
+            main=model.main_rec, # Reconstruccion vista principal
+            preds=model.reconstructions, # Prediccion final
             labels=tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False),
-            num_nodes=num_nodes,
-            num_edges=num_edges,
-            index=train_index
+            num_nodes=num_nodes, # Numero de genes
+            num_edges=num_edges,# Numero de aristas
+            index=train_index # Todos los indices de pares a usar
         )
 
     # Initialize session
     sess = tf.Session(config=config)
     sess.run(tf.global_variables_initializer())
 
+    # Convierte la matriz original a formato tupla
     adj_label = sparse_to_tuple(adj_orig)
 
-    # Construct feed dictionary
+    # Construye diccionario con todos los datos
     feed_dict = construct_feed_dict(supports, features, adj_label, placeholders)
 
-    # Train model
     eva_score, cost_val, epoch = [], [], 0
 
     tt = time.time()
     for epoch in range(FLAGS.epochs):
         t = time.time()
 
+        # Actualizar el feed_dict con dropout
         feed_dict = construct_feed_dict(supports, features, adj_label, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
 
@@ -218,10 +228,13 @@ for train_pos, test_pos in pos_edge_kf:
 
     train_time.append(time.time() - tt)
     print('Optimization Finished!')
+
+    # Quitar el dropout para la evaluacion
     feed_dict.update({placeholders['dropout']: 0})
+    # Predicciones finales
     adj_rec = sess.run(model.predict(), feed_dict=feed_dict)
 
-    # roc, aupr, f1 = evalution_cmf(adj_rec, test_set)
+    # Metricas
     roc, aupr, f1 = evalution_bal(adj_rec, test_edges, neg_test_edges)
     eva_score.append([(epoch + 1), roc, aupr, f1, train_time[-1]])
 
@@ -236,11 +249,14 @@ for train_pos, test_pos in pos_edge_kf:
     aupr_pair.append(eva_score[-1][2])
     f1_pair.append(eva_score[-1][3])
     
-    #Print y CSV
+    # Obtencion de los pares posibles
     num = adj_rec.shape[0]
     x, y = np.triu_indices(num, k=1)
 
+    # Quitar los que ya estaban en el entrenamiento
     c_set = set(zip(x, y)) - set(zip(row, col))
+
+    # Mapear ID a genes
     slMapping = {}
     with open(f'{carpetaInput}gene_list.txt', 'r') as inf:
         id = 0
@@ -248,17 +264,20 @@ for train_pos, test_pos in pos_edge_kf:
             slMapping[id] = line.replace('\n', '')
             id += 1
 
+    # Crear lista de predicciones con nombres
     inx = np.array(list(c_set))
     prediction = []
     for x, y, z in zip(inx[:, 0], inx[:, 1], adj_rec[inx[:, 0], inx[:, 1]]):
         prediction.append([slMapping[x], slMapping[y], z])
 
+    # Ordenar por score
     prediction.sort(key=lambda x: x[2], reverse=True)
 
     df = pd.DataFrame(data=prediction[:5000])
     df.to_csv(f'{carpetaOutput}Top_nonPred{name}.csv')
     name = name + 1
 
+    # Mas Metricas
     m1, sdv1 = mean_confidence_interval(auc_pair)
     m2, sdv2 = mean_confidence_interval(aupr_pair)
     m3, sdv3 = mean_confidence_interval(f1_pair)

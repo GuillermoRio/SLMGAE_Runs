@@ -6,16 +6,17 @@ FLAGS = flags.FLAGS
 class SLMGAE_PC():
     def __init__(self, placeholders, num_features, features_nonzero, num_nodes, num_supView, name):
         self.name = name
-        self.num_nodes = num_nodes
-        self.num_supView = num_supView
-        self.input_dim = num_features
-        self.features_nonzero = features_nonzero
-        self.adjs = placeholders['support']
-        self.dropout = placeholders['dropout']
-        self.inputs = placeholders['features']
-        self.support_recs = []
+        self.num_nodes = num_nodes                  #Numero de genes
+        self.num_supView = num_supView              #Numero de vistas sup
+        self.input_dim = num_features               #Numero de genes
+        self.features_nonzero = features_nonzero    #Optimizacion sparse
+        self.adjs = placeholders['support']         #Lista de supports views
+        self.dropout = placeholders['dropout']      #Dropout
+        self.inputs = placeholders['features']      #Caracteristicas de entrada
+        self.support_recs = []                      #Guardar reconstrucciones
 
         with tf.variable_scope(self.name):
+            # Capa de atencion que conbinara todas las vistas co la importancia de cada una
             self.attentionLayer = AttentionRec(
                 name='Attention_Layer',
                 output_dim=self.num_nodes,
@@ -26,8 +27,11 @@ class SLMGAE_PC():
 
     def build(self):
 
-        self.hidden = []
+        self.hidden = [] # Guardar salidas de la primera capa
         
+        #--------------------------------------------
+        # Primera capa: GCN Sparse o Encoder
+        #--------------------------------------------
         for i in range(self.num_supView):
             hidden = GraphConvolutionSparse(
                 name=f'gcn_sparse_layer{i+1}',
@@ -40,8 +44,11 @@ class SLMGAE_PC():
             
             self.hidden.append(hidden)
         
-        self.hid = []
+        self.hid = [] # Guardar salidas de la segunda capa
 
+        #--------------------------------------------
+        # Segunda capa: GCN Dense o Encoder
+        #--------------------------------------------
         for i in range(self.num_supView):
 
             hid = GraphConvolution(
@@ -54,6 +61,9 @@ class SLMGAE_PC():
             
             self.hid.append(hid)
 
+        #--------------------------------------------
+        # Decoder: Reconstruir cada vista
+        #--------------------------------------------
         for i in range(self.num_supView):
 
             self.support_recs.append(
@@ -62,13 +72,27 @@ class SLMGAE_PC():
                     output_dim=FLAGS.hidden2,
                     act=lambda x: x)(self.hid[i]))
        
+        #--------------------------------------------
+        # Capa de atencion: Combinar todas las vistas
+        #--------------------------------------------
         self.att = self.attentionLayer(self.support_recs)
 
+        #--------------------------------------------
+        # Vita Principal
+        #--------------------------------------------
         self.main_rec = InnerProductDecoder(
                 name='gcn_decoder',
                 output_dim=FLAGS.hidden2,
                 act=lambda x: x)(self.hid[-1])
+        
+        #--------------------------------------------
+        # Recontruccion Final
+        #--------------------------------------------
         self.reconstructions = tf.add(self.main_rec, tf.multiply(FLAGS.Coe, self.att))
 
     def predict(self):
         return self.reconstructions
+    
+
+
+# Saber si embeddings estan muy dispares o no.
