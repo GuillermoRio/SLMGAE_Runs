@@ -59,12 +59,13 @@ flags.DEFINE_integer('early_stopping', 15, 'Tolerance for early stopping (# of e
 
 pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput, supportViews)#Matriz principal y las supports
 
+# Mezclar aleatoriamente, para que los folds de validaciÓn cruza sean representativos
 np.random.shuffle(pos_edge)
 np.random.shuffle(neg_edge)
 
-# Store original adjacency matrix (without diagonal entries) for later
+# Matriz n * n dispersa poniendo 1 como SL 
 adj_orig = sp.csr_matrix((np.ones(len(pos_edge)), (pos_edge[:, 0], pos_edge[:, 1])), shape=(shapeViews, shapeViews))
-# Eliminar conexiones con uno mismo
+# Eliminar conexiones con uno mismo y eliminación de ceros para hacerla sparse de verdad
 adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
 adj_orig.eliminate_zeros()
 
@@ -72,73 +73,87 @@ adj_orig.eliminate_zeros()
 k_round = 0
 kf = KFold(n_splits=5, shuffle=True, random_state=seed)
 pos_edge_kf = kf.split(pos_edge)
+# Misma lenth con los negativos que con los positivos
 neg_edge = neg_edge[:len(pos_edge)]
 neg_edge_kf = kf.split(neg_edge)
 
-# AUC Probabilidad de que un positivo aleatorio tenga mas score que un neg aleatorio
-# AUPR 
-# Score entre precision y recall
+# Listas para guardar metricas
 auc_pair, aupr_pair, f1_pair, train_time = [], [], [], []
 training_loss, testing_loss = [], []
 
 name = 1
 for train_pos, test_pos in pos_edge_kf:
+    # Obtener los indices de prueba para las aristas negativas
     _, test_neg = next(neg_edge_kf)
 
+    # Resetear el grafo de ts para cada fold, evita que interfieran variables anteriores
     tf.reset_default_graph()
     k_round += 1
     print("Training in the %02d fold..." % k_round)
 
-    # Matriz de adjacencia (Todos los que si tienen SL)
+    # Extraer aristas positivas: row genes origen o 0 y col genes destino o 1
     row = pos_edge[train_pos, 0]
     col = pos_edge[train_pos, 1]
+    # Siempre 1s
     val = np.ones(len(train_pos))
+    # Matriz dispersa y simetrica con solo 1s
     adj = sp.csr_matrix((val, (row, col)), shape=(shapeViews, shapeViews))
-    adj = adj + adj.T #Matriz principal
+    adj = adj + adj.T
 
-    adjs = adjs_orig[0: supportViews] # Supports del 0 al 5
+    # Supports del 0 al 4, la 5 no la coge y mete despues la principal
+    adjs = adjs_orig[0: supportViews] 
     adjs.append(adj)
 
+    # Numero de genes, numero de aristas (SL)
     num_nodes = adj.shape[0]
-    num_edges = adj.sum() #Dos por arista por la simetría
+    num_edges = adj.sum()
 
-    # build test set
-    # Aristas positivas
+    # Aristas de test
     test_edges = pos_edge[test_pos]
-    # Tantas Aristas negativas como positivas haya
+    # Tantas Aristas test negativas como positivas haya
     neg_test_edges = neg_edge[test_neg[:len(test_pos)]]
+    # Combinar los dos 
     test_set = np.vstack((test_edges, neg_test_edges))
+
     '''
     test_edge = [  4  12   1]
                 [ 85 165   1]
                 [  0 205   1]
+
     neg_test_edge = [266 299   0]
                     [193 267   0]
                     [ 34 306   0]
-    test_set[:,0] = [4 85 0 266 193 34]
-    test_set[:,1] = [12 165 205 299 267 306]
-    test_set[:,2] = [1 1 1 0 0 0]
+    
     test_set = [[  4  12   1]
                 [ 85 165   1]
                 [  0 205   1]
                 [266 299   0]
                 [193 267   0]
                 [ 34 306   0]]
+
+    test_set[:,0] = [4 85 0 266 193 34]
+    test_set[:,1] = [12 165 205 299 267 306]
+    test_set[:,2] = [1 1 1 0 0 0]
+
     '''
 
-    # Indices de la matriz(Sin diagonal)
+    # Todos los indices de la matriz(k=1, Sin diagonal)
     x, y = np.triu_indices(num_nodes, k=1)
+
+    # Coger todos los indices que tenemos en el test
     test_x, test_y = test_set[:, 0], test_set[:, 1]
-    # Todos los pares posibles - los del test
+
+    # Todos los pares posibles - los del test = train
     train_index = set(zip(x, y)) - set(zip(test_x, test_y))
-    # Train pares posibles - los que ya sabemos que son SL del train quedadonos con los negativos a predecir.
+
+    # Train - los que son SL = negativos para entrenar
     train_neg_index = train_index - set(zip(row, col))
-    # Pasamos a lista todos los pares que no se saben del test
+
+    # Convertirlos array np para usar con ts
     train_index = np.array(list(train_index))
-    # Pasamos a lista todos los pares que no sabemos de SL
     train_neg_index = np.array(list(train_neg_index))
 
-    # build features, pasar las vistas a tuple
+    # Pasamos vista principal a tuplas
     features = sparse_to_tuple(adj)
     num_features = features[2][1]
     # Ver cuantas variables hay que no son 0

@@ -192,11 +192,17 @@ def mean_confidence_interval(data, confidence=0.95):
 
 
 def sparse_to_tuple(sparse_mx):
+    # Si la matriz es formato COO (fila, columna, valor)
     if not sp.isspmatrix_coo(sparse_mx):
         sparse_mx = sparse_mx.tocoo()
+    # sparse_mx.row son los indices de fila
+    # sparse_mx.col son los indices de columna
+    # vstack las apila verticalmente y transpose las empareja
     coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
-    values = sparse_mx.data
-    shape = sparse_mx.shape
+    # coords [[0,1], [2,3], [5,2]]
+
+    values = sparse_mx.data # [1, 1, 0, 1, 0, 0]
+    shape = sparse_mx.shape # (1000, 1000)
     return coords, values, shape
 
 
