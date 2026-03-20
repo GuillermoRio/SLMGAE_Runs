@@ -4,7 +4,8 @@ from __future__ import print_function
 import time
 import os
 import pandas as pd
-import random
+import csv
+
 from sklearn.model_selection import KFold
 
 from objective import *
@@ -12,44 +13,37 @@ from metrics import *
 from models import *
 from utils import *
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+# Set random seed
+seed = 123
+np.random.seed(seed)
+tf.set_random_seed(seed)
+
 # N de las shapes
 shapeViews = 17755
-supportViews = 5
-
 # Nombre carpetas donde coger los  datos
-# Mia screening
 carpetaInput = '../data/'
 carpetaOutput = '../resultados/1/'
 
-# reproducibilidad
-seed = 123
-
-np.random.seed(seed)
-tf.compat.v1.set_random_seed(seed)
-
-random.seed(seed)
-os.environ['PYTHONHASHSEED'] = str(seed)
-
-# desactivar GPU
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+nombres_vistas = [
+    "PPI",           # Vista 0 - Interacciones proteína-proteína
+    "Co-expression", # Vista 1 - Co-expresión
+    "ME",            # Vista 2 - (Mutual Exclusivity?)
+    "ProteinComplex",# Vista 3 - Complejos proteicos
+    "Pathway"        # Vista 4 - Rutas metabólicas
+]
 
 # tensorflow config
-config = tf.ConfigProto(
-    intra_op_parallelism_threads=16,
-    inter_op_parallelism_threads=16,
-    allow_soft_placement=True
-)
-
+config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.log_device_placement = False
 
 # Settings
-
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('log_file', f"{carpetaOutput}/log/SLMGAE_PC.txt", 'log file name.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 500, 'Number of epochs to train.')
 flags.DEFINE_integer('eva_epochs', 100, 'Number of epochs to evaluate')
 flags.DEFINE_integer('hidden1', 128, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 64, 'Number of units in hidden layer 2.')
@@ -60,8 +54,15 @@ flags.DEFINE_float('Coe', 1.0, 'Coefficient of support view loss.')
 flags.DEFINE_float('Beta', 2.0, 'Coefficient of final loss.')
 flags.DEFINE_integer('early_stopping', 20, 'Tolerance for early stopping (# of epochs).')
 
+# Borrar siempre el log
+with open(FLAGS.log_file, 'w') as f:
+    f.write("")
+    
+pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput)#Matriz principal y las supports
 
-pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput, supportViews)#Matriz principal y las supports
+for i, adj in enumerate(adjs_orig):
+    log(f'Vista {i+1}: suma = {adjs_orig[i].sum()}')
+ 
 
 np.random.shuffle(pos_edge)
 np.random.shuffle(neg_edge)
@@ -78,20 +79,28 @@ kf = KFold(n_splits=5, shuffle=True, random_state=123)
 pos_edge_kf = kf.split(pos_edge)
 neg_edge_kf = kf.split(neg_edge)
 
-# AUC Probabilidad de que un positivo aleatorio tenga mas score que un neg aleatorio
-# AUPR 
-# Score entre precision y recall
 auc_pair, aupr_pair, f1_pair, train_time = [], [], [], []
-training_loss, testing_loss = [], []
+prediction = []
+
+# Ver lo losses de cada matriz en sus epochs, Reinicia cada vez
+csv_filename = f'{carpetaOutput}entrenamientos/perdidas_folds.csv'
+with open(csv_filename, 'w', newline='') as f:
+    writer = csv.writer(f)
+    cabecera = ['epoch', 'costo_total', 'main_loss', 'preds_loss', 'supp_loss']
+    # Añade una columna por cada vista
+    for i, nombre in enumerate(nombres_vistas):
+        cabecera.append(f'vista_{i}_{nombre}')
+    writer.writerow(cabecera)
 
 name = 1
+
 for train_pos, test_pos in pos_edge_kf:
     _, test_neg = next(neg_edge_kf)
 
     tf.reset_default_graph()
     k_round += 1
-    print("Training in the %02d fold..." % k_round)
-
+    log("Training in the %02d fold..." % k_round)
+    
     # Matriz de adjacencia (Todos los que si tienen SL)
     row = pos_edge[train_pos, 0]
     col = pos_edge[train_pos, 1]
@@ -141,11 +150,18 @@ for train_pos, test_pos in pos_edge_kf:
     # Pasamos a lista todos los pares que no sabemos de SL
     train_neg_index = np.array(list(train_neg_index))
 
+    pos_set = set(zip(row, col))
+    train_labels = np.array([
+        1 if (i, j) in pos_set else 0
+        for i, j in train_index
+    ], dtype=np.float32)
+
     # build features, pasar las vistas a tuple
     features = sparse_to_tuple(adj)
     num_features = features[2][1]
     # Ver cuantas variables hay que no son 0
     features_nonzero = features[1].shape[0]
+
 
     supports = []
     
@@ -159,7 +175,7 @@ for train_pos, test_pos in pos_edge_kf:
             'adj_orig': tf.sparse_placeholder(tf.float32, name='adj_orig'),
             'dropout': tf.placeholder_with_default(0., shape=(), name='dropout'),
         }
-
+    print(train_labels)
     # Create model
     model = SLMGAE_PC(placeholders, num_features, features_nonzero, num_nodes, num_supports - 1,
                    name=f'SLMGAE_{k_round}')
@@ -170,7 +186,7 @@ for train_pos, test_pos in pos_edge_kf:
             supp=model.support_recs,
             main=model.main_rec,
             preds=model.reconstructions,
-            labels=tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False),
+            labels=train_labels,
             num_nodes=num_nodes,
             num_edges=num_edges,
             index=train_index
@@ -189,36 +205,95 @@ for train_pos, test_pos in pos_edge_kf:
     eva_score, cost_val, epoch = [], [], 0
 
     tt = time.time()
+
     for epoch in range(FLAGS.epochs):
         t = time.time()
 
         feed_dict = construct_feed_dict(supports, features, adj_label, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
 
-        # One update of parameter matrices
-        _, avg_cost = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
+        tensores_a_ejecutar = [
+            opt.opt_op,           # Operación de optimización
+            opt.cost,             # Costo total
+            opt.loss_main,        # Pérdida vista principal
+            opt.loss_preds,       # Pérdida predicción final
+            opt.loss_supp,        # Pérdida de supports junta
+            *opt.loss_supp_individual  # TODAS las pérdidas individuales (el * desempaqueta la lista)
+        ]
+    
+        # Ejecutamos y recibimos todos los valores
+        losses = sess.run(tensores_a_ejecutar, feed_dict=feed_dict)
+        
+        avg_cost = losses[1]            
+        loss_main_val = losses[2]      
+        loss_preds_val = losses[3]     
+        loss_supp_val = losses[4]      
+        losses_supp_val = losses[5:]  
 
         cost_val.append(avg_cost)
+        
+        # DENTRO del bucle de entrenamiento, después de calcular las pérdidas:
+        if (epoch + 1) % 10 == 0:
+            # GUARDAR EN CSV
+            with open(csv_filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                fila = [epoch + 1, avg_cost, loss_main_val, loss_preds_val, loss_supp_val] + losses_supp_val
+                writer.writerow(fila)
 
-        print("Epoch: " + '%04d' % (epoch + 1) +
-              " train_loss=" + "{:.5f}".format(avg_cost) +
-              " time= " + "{:.5f}".format(time.time() - t))
+        # PESOS IMPORTANTES
+        if (epoch + 1) % 50 == 0:
+            peso_vistas = sess.run(model.attentionLayer.attention, feed_dict=feed_dict)
+            peso_medio_vistas = np.mean(peso_vistas, axis=(1, 2))
+            log(f"\nEpoch: {epoch + 1}")
+            for i, nombre in enumerate(nombres_vistas):
+                log(f"{nombre}: peso medio = {peso_medio_vistas[i]:.3f}")
 
+
+    # % DE MEJORA DE TODAS LAS VISTAS
+    log(f"\nPORCENTAJES DE MEJORA - FOLD {k_round}\n")
+    df_completo = pd.read_csv(csv_filename)
+
+    filas_por_fold = FLAGS.epochs/10
+    inicio = int((k_round - 1) * filas_por_fold)
+    fin = int(inicio + filas_por_fold)
+
+    df_fold = df_completo.iloc[inicio:fin]
+    print(f" Filas en este fold: {len(df_fold)} (de {inicio} a {fin-1})\n")
+
+    # Main upgraded
+    main_inicial = df_fold['main_loss'].iloc[0]
+    main_final = df_fold['main_loss'].iloc[-1]
+    main_mejora = (main_inicial - main_final) / main_inicial * 100
+    log(f"\tMain upgraded: {main_mejora:.1f}%")
+
+    # Preds upgraded
+    preds_inicial = df_fold['preds_loss'].iloc[0]
+    preds_final = df_fold['preds_loss'].iloc[-1]
+    preds_mejora = (preds_inicial - preds_final) / preds_inicial * 100
+    log(f"\tPreds upgraded: {preds_mejora:.1f}%")
+
+    preds_inicial = df_fold['supp_loss'].iloc[0]
+    preds_final = df_fold['supp_loss'].iloc[-1]
+    preds_mejora = (preds_inicial - preds_final) / preds_inicial * 100
+    log(f"\tSupp upgraded: {preds_mejora:.1f}%")
+
+    # Cada vista
+    for i, nombre in enumerate(nombres_vistas):
+        columna = f'vista_{i}_{nombre}'
+        vista_inicial = df_fold[columna].iloc[0]
+        vista_final = df_fold[columna].iloc[-1]
+        vista_mejora = (vista_inicial - vista_final) / vista_inicial * 100
+        log(f"\t{nombre}: {vista_mejora:.1f}%")
+
+    # Metricas de evaluacion
     train_time.append(time.time() - tt)
-    print('Optimization Finished!')
+    print('\nOptimization Finished!\n')
     feed_dict.update({placeholders['dropout']: 0})
     adj_rec = sess.run(model.predict(), feed_dict=feed_dict)
 
     # roc, aupr, f1 = evalution_cmf(adj_rec, test_set)
     roc, aupr, f1 = evalution_bal(adj_rec, test_edges, neg_test_edges)
     eva_score.append([(epoch + 1), roc, aupr, f1, train_time[-1]])
-
-    print("Test by Evalution:")
-    for e in eva_score:
-        print('Train_Epoch = %04d,'
-              ' Test ROC score: %5f,'
-              ' Test AUPR score:%5f,'
-              ' Test F1 score: %5f' % (e[0], e[1], e[2], e[3]))
 
     auc_pair.append(eva_score[-1][1])
     aupr_pair.append(eva_score[-1][2])
@@ -230,14 +305,14 @@ for train_pos, test_pos in pos_edge_kf:
 
     c_set = set(zip(x, y)) - set(zip(row, col))
     slMapping = {}
-    with open(f'{carpetaInput}gene_list.txt', 'r') as inf:
+    with open('../PC_data/gene_list.txt', 'r') as inf:
         id = 0
         for line in inf:
             slMapping[id] = line.replace('\n', '')
             id += 1
 
     inx = np.array(list(c_set))
-    prediction = []
+
     for x, y, z in zip(inx[:, 0], inx[:, 1], adj_rec[inx[:, 0], inx[:, 1]]):
         prediction.append([slMapping[x], slMapping[y], z])
 
@@ -252,10 +327,12 @@ for train_pos, test_pos in pos_edge_kf:
     m3, sdv3 = mean_confidence_interval(f1_pair)
     m4, sdv4 = mean_confidence_interval(train_time)
 
-    log("Average metrics over pairs:\n" +
+    log("\nAverage metrics over pairs:\n" +
         " time_mean:%.5f, time_sdv:%.5f\n" % (m4, sdv4) +
         " auc_mean:%.5f, auc_sdv:%.5f\n" % (m1, sdv1) +
         " aupr_mean:%.5f, aupr_sdv:%.5f\n" % (m2, sdv2) +
-        " f1_mean: %.5f, f1_sdv: %.5f\n" % (m3, sdv3))
+        " f1_mean: %.5f, f1_sdv: %.5f\n" % (m3, sdv3) +
+        "\n\n\n\n\n\n")
 
-#print(adj_rec[test_set[:, 0], tesSt_set[:, 1]])
+
+

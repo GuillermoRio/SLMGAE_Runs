@@ -81,6 +81,3 @@ def evalution_bal(adj_rec, edges_pos, edges_neg):
     #     codecs.open('prc_bal.txt', mode='a', encoding='utf-8').write(prc + "\n")
 
     return roc_score, aupr_score, f1_val
-
-
-# Utilizar algun sstema de compresion a la hpra de utilizar tensores.

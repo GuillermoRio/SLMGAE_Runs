@@ -36,7 +36,7 @@ def load_PC_data(carpeta, num_views):
     archivos = sorted(Path(carpeta).glob("*.parquet"))
     
     for i, archivo in enumerate(archivos[:num_views]):
-        print(f'Vista{i}: {archivo.name}')
+        print(f'Vista{i+1}: {archivo.name}')
         df = pd.read_parquet(archivo)
         adjs.append(sp.coo_matrix(df.values))
         

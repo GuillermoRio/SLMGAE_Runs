@@ -86,7 +86,7 @@ class SLMGAE_PC():
                 act=lambda x: x)(self.hid[-1])
         
         #--------------------------------------------
-        # Recontruccion Final
+        # Recontruccion Final (SCORE): reconstruccion de la main + (reconstruccion vistas juntas * Coe) 
         #--------------------------------------------
         self.reconstructions = tf.add(self.main_rec, tf.multiply(FLAGS.Coe, self.att))
 

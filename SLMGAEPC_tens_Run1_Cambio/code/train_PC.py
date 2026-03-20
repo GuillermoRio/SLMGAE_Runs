@@ -10,8 +10,8 @@ from sklearn.model_selection import KFold
 
 from objective import *
 from metrics import *
-from models import *
-from utils import *
+from models_origin import *
+from utils_origin import *
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
@@ -24,10 +24,16 @@ tf.set_random_seed(seed)
 shapeViews = 85
 numViews = 5
 # Nombre carpetas donde coger los  datos
-carpetaInput = '../data_aux/'
-carpetaOutput = '../resultados_aux/1/'
+carpetaInput = '../PC_data/'
+carpetaOutput = '../resultados/1/'
 
-nombres_vistas = ["coexp", "me", "pathway", "ppi", "proteincomplex"]
+nombres_vistas = [
+    "PPI",           # Vista 0 - Interacciones proteína-proteína
+    "Co-expression", # Vista 1 - Co-expresión
+    "ME",            # Vista 2 - (Mutual Exclusivity?)
+    "ProteinComplex",# Vista 3 - Complejos proteicos
+    "Pathway"        # Vista 4 - Rutas metabólicas
+]
 
 # tensorflow config
 config = tf.ConfigProto()
@@ -53,7 +59,7 @@ flags.DEFINE_integer('early_stopping', 20, 'Tolerance for early stopping (# of e
 with open(FLAGS.log_file, 'w') as f:
     f.write("")
     
-pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput, num_views=numViews)#Matriz principal y las supports
+pos_edge, neg_edge, adjs_orig = load_PC_data(carpetaInput)#Matriz principal y las supports
 
 for i, adj in enumerate(adjs_orig):
     log(f'Vista {i+1}: suma = {adjs_orig[i].sum()}')
@@ -300,7 +306,7 @@ for train_pos, test_pos in pos_edge_kf:
 
     c_set = set(zip(x, y)) - set(zip(row, col))
     slMapping = {}
-    with open(f'{carpetaInput}gene_list.txt', 'r') as inf:
+    with open('../PC_data/gene_list.txt', 'r') as inf:
         id = 0
         for line in inf:
             slMapping[id] = line.replace('\n', '')
