@@ -27,6 +27,8 @@ def load_PC_data(carpeta, num_views):
         df = pd.read_parquet(archivo)
         adjs.append(sp.coo_matrix(df.values))
         
+    print(len(adjs))
+
     pos_edge = np.load(f'{carpeta}pos_edge_binary.npy').astype(np.int32)[:, :2]
     neg_edge = np.load(f'{carpeta}neg_edge_binary.npy').astype(np.int32)[:, :2]
 

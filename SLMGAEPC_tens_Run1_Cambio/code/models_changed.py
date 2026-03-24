@@ -15,13 +15,15 @@ class SLMGAE_PC():
         self.inputs = placeholders['features']
         self.support_recs = []
 
-        #pesos_iniciales = [1.0, 1.2, 1.8, 1.7, 0.2]
+        pesos_iniciales = [1.0, 1.2, 1.8, 1.7, 0]
         #54.58, 57.52, 69.18, 67.48, 17.1
         with tf.variable_scope(self.name):
             self.attentionLayer = AttentionRec(
                 name='Attention_Layer',
                 output_dim=self.num_nodes,
-                num_support=self.num_supView)
+                num_support=self.num_supView,
+                initial_weights=pesos_iniciales
+            )
 
             self.build()
 
@@ -34,7 +36,8 @@ class SLMGAE_PC():
                 name=f'gcn_sparse_layer{i+1}',
                 input_dim=self.input_dim,
                 output_dim=FLAGS.hidden1,
-                adj=self.adjs[i],                features_nonzero=self.features_nonzero,
+                adj=self.adjs[i],                
+                features_nonzero=self.features_nonzero,
                 act=tf.nn.leaky_relu,
                 dropout=self.dropout)(self.inputs)
                 

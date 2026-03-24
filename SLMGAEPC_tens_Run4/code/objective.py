@@ -8,9 +8,7 @@ class Optimizer():
     def __init__(self, supp, main, preds, labels, num_nodes, num_edges, index):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            print(f'primer: {labels}')
             labels_sub = labels
-            print(f'primer: {labels_sub}')
 
             main_sub = tf.gather_nd(main, index)
             preds_sub = tf.gather_nd(preds, index)

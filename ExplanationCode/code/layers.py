@@ -67,7 +67,7 @@ class GraphConvolutionSparse():
             x = inputs # Matriz de adjacencia sparse
 
             x = dropout_sparse(x, 1 - self.dropout, self.features_nonzero)
-            # cConvierte (N*N) * (N*hidden1) = (N*hidden1)
+            # Convierte (N*N) * (N*hidden1) = (N*hidden1)
             # Pasa de tener N caracteristicas a tener hidden1 
             x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
             # Cada nodo mezcla su informacion con la de sus vecinos
